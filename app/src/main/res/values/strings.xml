@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">WiFiLevelWallPaper</string>
+    <string name="wallpaper_description">Changes color according to level of WiFi signal.</string>
+    <string name="button_set_wallpaper">Set this new lovely wallpaper</string>
 </resources>
