@@ -1,12 +1,17 @@
 package ru.skypathway.wifilevelwallpaper;
 
+import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.Handler;
 import android.service.wallpaper.WallpaperService;
 import android.view.SurfaceHolder;
 
 public class WifiWallpaperService extends WallpaperService {
+    private static final int MAX_RSSI = -55;
+    private static final int MIN_RSSI = -100;
 
     @Override
     public Engine onCreateEngine() {
@@ -23,7 +28,7 @@ public class WifiWallpaperService extends WallpaperService {
         };
 
         private boolean mVisible = true;
-        int mDrawSpeed = 20;
+        int mDrawSpeed = 100;
 
         public MyWallpaperEngine() {
             mHandler.post(mDrawRunner);
@@ -71,10 +76,47 @@ public class WifiWallpaperService extends WallpaperService {
 
         private void drawBackground(Canvas canvas) {
             if (canvas != null) {
-            //int colorBackground = ResourcesCompat.getColor(getResources(),
-            //        R.color.colorBackgroundMinWifi, null);
-                canvas.drawColor(Color.RED);
+                /*
+                Проделывать такое каждые 0,1 сек может быть трудозатратно, не успела проверить
+                 */
+                WifiManager wifiManager = (WifiManager) getApplicationContext()
+                        .getSystemService(Context.WIFI_SERVICE);
+                WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+                int rssi = wifiInfo.getRssi();
+                float normalizedRssi = calculateNormalizedRssi(rssi);
+                int colorBackground = getColor(normalizedRssi);
+                canvas.drawColor(colorBackground);
             }
+        }
+
+        /*
+        Возвращает значение от 0 (нет вай-фая) до 1 (отличный вай-фай)
+         */
+        private float calculateNormalizedRssi(int rssi) {
+            if (rssi <= MIN_RSSI) {
+                return 0f;
+            } else if (rssi >= MAX_RSSI) {
+                return 1f;
+            } else {
+                float range = MAX_RSSI - MIN_RSSI;
+                return Math.abs((float)(MIN_RSSI - rssi)/range);
+            }
+        }
+
+        /*
+        Вычисляет градиент цвета от красного до зелёного.
+        В функцию лучше, конечно, добавить параметры minColor и maxColor.
+         */
+        private int getColor(float power)
+        {
+            /* от 0 до 120 как раз градиент от красного до зелёного
+            Да, лучше было сделать это через константы, с минимальным и максимальным цветом,
+            но пока так.
+            */
+            float hue = power * 120f;
+            float saturation = 0.9f;
+            float brightness = 0.9f;
+            return Color.HSVToColor(new float[]{hue, saturation, brightness});
         }
 
         @Override
